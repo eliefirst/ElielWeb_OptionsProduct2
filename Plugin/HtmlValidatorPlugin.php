@@ -18,66 +18,42 @@ use Magento\Cms\Model\Wysiwyg\Config;
 class HtmlValidatorPlugin
 {
     /**
-     * Additional allowed attributes for span tag
+     * Cached span configuration string
      *
-     * @var array
+     * @var string|null
      */
-    private $spanAttributes = [
-        'class',
-        'width',
-        'height',
-        'style',
-        'alt',
-        'title',
-        'border',
-        'id',
-        'data-active-tab',
-        'data-appearance',
-        'data-autoplay',
-        'data-autoplay-speed',
-        'data-background-images',
-        'data-background-type',
-        'data-carousel-mode',
-        'data-center-padding',
-        'data-content-type',
-        'data-element',
-        'data-enable-parallax',
-        'data-fade',
-        'data-grid-size',
-        'data-infinite-loop',
-        'data-link-type',
-        'data-locations',
-        'data-overlay-color',
-        'data-parallax-speed',
-        'data-pb-style',
-        'data-same-width',
-        'data-show-arrows',
-        'data-show-button',
-        'data-show-controls',
-        'data-show-dots',
-        'data-show-overlay',
-        'data-slide-name',
-        'data-slick-index',
-        'data-role',
-        'data-product-id',
-        'data-price-box',
-        'aria-hidden',
-        'aria-label',
-        'data-tab-name',
-        'data-video-fallback-src',
-        'data-video-lazy-load',
-        'data-video-loop',
-        'data-video-overlay-color',
-        'data-video-play-only-visible',
-        'data-video-src',
-        'data-placeholder',
-        'href',
-        'role',
-        'target'
-    ];
+    private $spanConfigCache = null;
+
+    /**
+     * Get span configuration string (cached)
+     *
+     * @return string
+     */
+    private function getSpanConfig()
+    {
+        if ($this->spanConfigCache === null) {
+            $spanAttributes = [
+                'class', 'width', 'height', 'style', 'alt', 'title', 'border', 'id',
+                'data-active-tab', 'data-appearance', 'data-autoplay', 'data-autoplay-speed',
+                'data-background-images', 'data-background-type', 'data-carousel-mode',
+                'data-center-padding', 'data-content-type', 'data-element', 'data-enable-parallax',
+                'data-fade', 'data-grid-size', 'data-infinite-loop', 'data-link-type',
+                'data-locations', 'data-overlay-color', 'data-parallax-speed', 'data-pb-style',
+                'data-same-width', 'data-show-arrows', 'data-show-button', 'data-show-controls',
+                'data-show-dots', 'data-show-overlay', 'data-slide-name', 'data-slick-index',
+                'data-role', 'data-product-id', 'data-price-box', 'aria-hidden', 'aria-label',
+                'data-tab-name', 'data-video-fallback-src', 'data-video-lazy-load',
+                'data-video-loop', 'data-video-overlay-color', 'data-video-play-only-visible',
+                'data-video-src', 'data-placeholder', 'href', 'role', 'target'
+            ];
+            $this->spanConfigCache = 'span[' . implode(',', $spanAttributes) . ']';
+        }
+        return $this->spanConfigCache;
+    }
 
     /**
      * Modify WYSIWYG configuration to allow span tag with additional attributes
+     * Only modifies config in admin area to avoid frontend overhead
      *
      * @param Config $subject
      * @param array $result
@@ -85,27 +61,31 @@ class HtmlValidatorPlugin
      */
     public function afterGetConfig(Config $subject, $result)
     {
-        // Add extended_valid_elements to allow span with all specified attributes
-        if (is_array($result)) {
-            $spanAttributesList = implode(',', $this->spanAttributes);
+        if (!is_array($result)) {
+            return $result;
+        }
 
-            // Configure TinyMCE extended_valid_elements
-            if (!isset($result['extended_valid_elements'])) {
-                $result['extended_valid_elements'] = '';
-            }
+        // Only apply in admin area to avoid frontend performance impact
+        if (PHP_SAPI === 'cli' || !isset($_SERVER['REQUEST_URI'])) {
+            return $result;
+        }
 
-            // Add span configuration if not already present
-            if (strpos($result['extended_valid_elements'], 'span[') === false) {
-                if (!empty($result['extended_valid_elements'])) {
-                    $result['extended_valid_elements'] .= ',';
-                }
-                $result['extended_valid_elements'] .= 'span[' . $spanAttributesList . ']';
-            }
+        // Quick check - only modify if in admin area
+        if (strpos($_SERVER['REQUEST_URI'], '/admin') === false) {
+            return $result;
+        }
 
-            // Also add to valid_elements to ensure span is recognized
-            if (!isset($result['valid_elements'])) {
-                $result['valid_elements'] = '';
+        // Initialize extended_valid_elements if not set
+        if (!isset($result['extended_valid_elements'])) {
+            $result['extended_valid_elements'] = '';
+        }
+
+        // Add span configuration if not already present
+        if (strpos($result['extended_valid_elements'], 'span[') === false) {
+            if (!empty($result['extended_valid_elements'])) {
+                $result['extended_valid_elements'] .= ',';
             }
+            $result['extended_valid_elements'] .= $this->getSpanConfig();
         }
 
         return $result;
