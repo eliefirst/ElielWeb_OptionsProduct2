@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * ElielWeb OptionsProduct Module Configuration
+ *
+ * @category  ElielWeb
+ * @package   ElielWeb_ProductConfigurator
+ * @author    Elie <elie@redline.paris>
+ * @copyright Copyright (c) 2025 RedLine
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+    <module name="ElielWeb_ProductConfigurator" setup_version="1.0.0">
+        <sequence>
+            <module name="Magento_Catalog"/>
+            <module name="Magento_Store"/>
+        </sequence>
+    </module>
+</config>

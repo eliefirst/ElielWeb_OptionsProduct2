@@ -1,0 +1,150 @@
+<?php
+/**
+ * ElielWeb OptionsProduct - Select/Dropdown Option Type Template (Hyva)
+ *
+ * @var $block \Magento\Framework\View\Element\Template
+ * @var \Magento\Catalog\Model\Product\Option $option
+ * @var \ElielWeb\ProductConfigurator\ViewModel\ProductOptions $optionsViewModel
+ */
+
+$option = $block->getData('option');
+$product = $block->getData('product');
+$optionsViewModel = $block->getData('options_view_model');
+
+$values = $option->getValues() ?? [];
+$optionId = $option->getOptionId();
+
+// Check if this is a WIRE option for special rendering
+$isWireOption = $optionsViewModel->isWireOption($option);
+
+// Group wire colors by family if it's a wire option with many values
+$groupedValues = [];
+if ($isWireOption && count($values) > 20) {
+    $colorFamilies = [
+        'Fluorescent' => ['Fluo', 'Fluorescent', 'Flashy'],
+        'Brown/Chocolate' => ['Chocolate', 'Brown', 'Cocoa', 'Loam', 'Rust'],
+        'Pink/Purple' => ['Pink', 'Rose', 'Fushia', 'Orchid', 'Peony', 'Raspberry', 'Candy', 'Lilac', 'Purple', 'Violet', 'Lavender', 'Mauve'],
+        'Blue' => ['Blue', 'Ocean', 'Caribbean', 'Navy', 'Baltic', 'Lagoon'],
+        'Black/Gray' => ['Black', 'Licorice', 'Anthracite', 'Gray', 'Grey', 'Metal'],
+        'Green' => ['Green', 'Olive', 'Jade', 'Forest', 'Leaf', 'Emerald', 'Lime', 'Khaki', 'Duck'],
+        'Beige/Neutral' => ['Beige', 'Taupe', 'Greige', 'Pearl', 'Cream', 'White', 'Champagne', 'Biscuit', 'Wheat'],
+        'Orange/Red' => ['Orange', 'Red', 'Salmon', 'Pumpkin', 'Carrot', 'Poppy', 'Cherry', 'Pomegranate'],
+        'Other' => []
+    ];
+
+    foreach ($values as $value) {
+        $title = $value->getTitle();
+        $assigned = false;
+
+        foreach ($colorFamilies as $family => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (stripos($title, $keyword) !== false) {
+                    $groupedValues[$family][] = $value;
+                    $assigned = true;
+                    break 2;
+                }
+            }
+        }
+
+        if (!$assigned) {
+            $groupedValues['Other'][] = $value;
+        }
+    }
+}
+?>
+
+<div class="select-options <?= $isWireOption ? 'wire-option-select' : '' ?>">
+    <select id="select_<?= $escaper->escapeHtmlAttr($optionId) ?>"
+            name="options[<?= $escaper->escapeHtmlAttr($optionId) ?>]"
+            class="product-custom-option <?= $option->getIsRequire() ? 'required' : '' ?>"
+            <?= $option->getIsRequire() ? 'required' : '' ?>
+            @change="selectOption(<?= (int)$optionId ?>, $event.target.value, parseFloat($event.target.options[$event.target.selectedIndex].dataset.price || 0))"
+            x-model="selectedOptions[<?= (int)$optionId ?>]?.valueId">
+
+        <option value="">
+            <?= $escaper->escapeHtml(__('-- Please Select --')) ?>
+        </option>
+
+        <?php if (!empty($groupedValues)): ?>
+            <?php foreach ($groupedValues as $family => $familyValues): ?>
+                <?php if (!empty($familyValues)): ?>
+                    <optgroup label="<?= $escaper->escapeHtml(__($family)) ?>">
+                        <?php foreach ($familyValues as $value): ?>
+                            <?php
+                            $valueId = $value->getOptionTypeId();
+                            $price = (float)$value->getPrice();
+                            $priceType = $value->getPriceType();
+                            ?>
+                            <option value="<?= $escaper->escapeHtmlAttr($valueId) ?>"
+                                    data-price="<?= $escaper->escapeHtmlAttr($price) ?>"
+                                    data-price-type="<?= $escaper->escapeHtmlAttr($priceType) ?>">
+                                <?= $escaper->escapeHtml($value->getTitle()) ?>
+                                <?php if ($price != 0): ?>
+                                    <?php if ($priceType === 'percent'): ?>
+                                        (<?= $price > 0 ? '+' : '' ?><?= $escaper->escapeHtml($price) ?>%)
+                                    <?php else: ?>
+                                        (<?= $price > 0 ? '+' : '' ?><?= $escaper->escapeHtml($block->formatPrice($price)) ?>)
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </optgroup>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <?php foreach ($values as $value): ?>
+                <?php
+                $valueId = $value->getOptionTypeId();
+                $price = (float)$value->getPrice();
+                $priceType = $value->getPriceType();
+                ?>
+                <option value="<?= $escaper->escapeHtmlAttr($valueId) ?>"
+                        data-price="<?= $escaper->escapeHtmlAttr($price) ?>"
+                        data-price-type="<?= $escaper->escapeHtmlAttr($priceType) ?>">
+                    <?= $escaper->escapeHtml($value->getTitle()) ?>
+                    <?php if ($price != 0): ?>
+                        <?php if ($priceType === 'percent'): ?>
+                            (<?= $price > 0 ? '+' : '' ?><?= $escaper->escapeHtml($price) ?>%)
+                        <?php else: ?>
+                            (<?= $price > 0 ? '+' : '' ?><?= $escaper->escapeHtml($block->formatPrice($price)) ?>)
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </option>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </select>
+</div>
+
+<style>
+.select-options select {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.select-options select:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+}
+
+.wire-option-select select {
+    /* Special styling for wire color dropdown */
+    max-height: 400px;
+}
+
+.select-options select optgroup {
+    font-weight: 600;
+    font-style: normal;
+    padding: 0.25rem 0;
+}
+
+.select-options select option {
+    padding: 0.5rem 1rem;
+}
+</style>

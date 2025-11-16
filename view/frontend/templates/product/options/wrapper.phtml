@@ -1,0 +1,187 @@
+<?php
+/**
+ * ElielWeb OptionsProduct - Product Options Wrapper Template (Hyva)
+ *
+ * @var $block \Magento\Catalog\Block\Product\View\Options
+ * @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer
+ * @var \ElielWeb\ProductConfigurator\ViewModel\ProductOptions $optionsViewModel
+ */
+
+use Magento\Catalog\Model\Product\Option;
+
+$product = $block->getProduct();
+$optionsViewModel = $block->getData('product_options_view_model');
+
+if (!$product->getHasOptions()) {
+    return;
+}
+
+$options = $product->getOptions() ?? [];
+?>
+
+<div class="product-options-wrapper"
+     id="product-options-wrapper"
+     x-data="productOptions(<?= $escaper->escapeHtmlAttr($optionsViewModel->getAlpineData($product)) ?>)"
+     x-init="init()">
+
+    <div class="fieldset product-options" tabindex="0">
+        <?php foreach ($options as $option): ?>
+            <div class="field <?= $escaper->escapeHtmlAttr($optionsViewModel->getOptionCssClass($option)) ?>"
+                 data-option-id="<?= $escaper->escapeHtmlAttr($option->getOptionId()) ?>">
+
+                <label class="label">
+                    <?= /* @noEscape */ $optionsViewModel->getOptionLabel($option) ?>
+                </label>
+
+                <div class="control">
+                    <?php
+                    switch ($option->getType()) {
+                        case Option::OPTION_TYPE_RADIO:
+                            echo $block->getLayout()
+                                ->createBlock(\Magento\Framework\View\Element\Template::class)
+                                ->setTemplate('ElielWeb_ProductConfigurator::product/options/type/radio.phtml')
+                                ->setData('option', $option)
+                                ->setData('product', $product)
+                                ->setData('options_view_model', $optionsViewModel)
+                                ->toHtml();
+                            break;
+
+                        case Option::OPTION_TYPE_DROP_DOWN:
+                            echo $block->getLayout()
+                                ->createBlock(\Magento\Framework\View\Element\Template::class)
+                                ->setTemplate('ElielWeb_ProductConfigurator::product/options/type/select.phtml')
+                                ->setData('option', $option)
+                                ->setData('product', $product)
+                                ->setData('options_view_model', $optionsViewModel)
+                                ->toHtml();
+                            break;
+
+                        default:
+                            // Fallback to default Magento rendering
+                            echo $block->getOptionHtml($option);
+                            break;
+                    }
+                    ?>
+                </div>
+
+                <?php if ($option->getIsRequire()): ?>
+                    <div class="mage-error" x-show="errors['option_<?= $escaper->escapeHtmlAttr($option->getOptionId()) ?>']" style="display: none;">
+                        <?= $escaper->escapeHtml(__('This is a required field.')) ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <?php if ($product->getPriceInfo()->getPrice('custom_option_price')->getValue()): ?>
+        <div class="product-options-bottom">
+            <div class="options-total-price" x-show="totalPrice > 0">
+                <span class="label"><?= $escaper->escapeHtml(__('Options Total:')) ?></span>
+                <span class="price" x-text="formatPrice(totalPrice)"></span>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<script>
+function productOptions(initialData = {}) {
+    return {
+        options: initialData.options || [],
+        selectedOptions: initialData.selectedOptions || {},
+        totalPrice: initialData.totalPrice || 0,
+        currencySymbol: initialData.currencySymbol || '€',
+        errors: {},
+
+        init() {
+            // Initialize default selections
+            this.options.forEach(option => {
+                if (option.type === 'radio' || option.type === 'drop_down') {
+                    // Find default value if any
+                    const defaultValue = option.values?.find(v => v.is_default);
+                    if (defaultValue) {
+                        this.selectOption(option.id, defaultValue.id, defaultValue.price);
+                    }
+                }
+            });
+        },
+
+        selectOption(optionId, valueId, price = 0) {
+            this.selectedOptions[optionId] = {
+                valueId: valueId,
+                price: parseFloat(price) || 0
+            };
+
+            this.updateTotalPrice();
+            this.clearError(optionId);
+
+            // Dispatch event for cart integration
+            this.$dispatch('option-selected', {
+                optionId: optionId,
+                valueId: valueId,
+                price: price
+            });
+        },
+
+        updateTotalPrice() {
+            this.totalPrice = Object.values(this.selectedOptions)
+                .reduce((sum, opt) => sum + opt.price, 0);
+        },
+
+        formatPrice(price) {
+            return '+' + this.currencySymbol + price.toFixed(2);
+        },
+
+        validate() {
+            this.errors = {};
+            let isValid = true;
+
+            this.options.forEach(option => {
+                if (option.is_require && !this.selectedOptions[option.id]) {
+                    this.errors['option_' + option.id] = true;
+                    isValid = false;
+                }
+            });
+
+            return isValid;
+        },
+
+        clearError(optionId) {
+            delete this.errors['option_' + optionId];
+        },
+
+        getSelectedOptions() {
+            return this.selectedOptions;
+        }
+    }
+}
+</script>
+
+<style>
+.product-custom-option {
+    margin-bottom: 1.5rem;
+}
+
+.option-wire .control {
+    /* Special styling for wire/thread color options */
+}
+
+.option-size .control {
+    /* Special styling for size options */
+}
+
+.options-total-price {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.options-total-price .price {
+    color: #1a73e8;
+    font-size: 1.2rem;
+}
+</style>

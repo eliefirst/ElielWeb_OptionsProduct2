@@ -1,0 +1,154 @@
+<?php
+/**
+ * ElielWeb OptionsProduct - Radio Option Type Template (Hyva)
+ *
+ * @var $block \Magento\Framework\View\Element\Template
+ * @var \Magento\Catalog\Model\Product\Option $option
+ * @var \ElielWeb\ProductConfigurator\ViewModel\ProductOptions $optionsViewModel
+ */
+
+$option = $block->getData('option');
+$product = $block->getData('product');
+$optionsViewModel = $block->getData('options_view_model');
+
+$values = $option->getValues() ?? [];
+$optionId = $option->getOptionId();
+
+// Check if this is a SIZE option for special rendering
+$isSizeOption = $optionsViewModel->isSizeOption($option);
+?>
+
+<div class="radio-options <?= $isSizeOption ? 'size-option-radio' : '' ?>"
+     role="radiogroup"
+     aria-labelledby="option-label-<?= $escaper->escapeHtmlAttr($optionId) ?>">
+
+    <?php foreach ($values as $value): ?>
+        <?php
+        $valueId = $value->getOptionTypeId();
+        $inputId = 'options_' . $optionId . '_' . $valueId;
+        $price = (float)$value->getPrice();
+        $priceType = $value->getPriceType();
+        ?>
+
+        <div class="radio-option-item <?= $isSizeOption ? 'size-item' : '' ?>">
+            <input type="radio"
+                   id="<?= $escaper->escapeHtmlAttr($inputId) ?>"
+                   name="options[<?= $escaper->escapeHtmlAttr($optionId) ?>]"
+                   value="<?= $escaper->escapeHtmlAttr($valueId) ?>"
+                   class="radio"
+                   <?= $option->getIsRequire() ? 'required' : '' ?>
+                   @change="selectOption(<?= (int)$optionId ?>, <?= (int)$valueId ?>, <?= (float)$price ?>)"
+                   x-model="selectedOptions[<?= (int)$optionId ?>]?.valueId">
+
+            <label for="<?= $escaper->escapeHtmlAttr($inputId) ?>"
+                   class="radio-label <?= $isSizeOption ? 'size-label' : '' ?>">
+                <span class="option-value-text">
+                    <?= $escaper->escapeHtml($value->getTitle()) ?>
+                </span>
+
+                <?php if ($price != 0): ?>
+                    <span class="option-price">
+                        <?php if ($priceType === 'percent'): ?>
+                            <?= $price > 0 ? '+' : '' ?><?= $escaper->escapeHtml($price) ?>%
+                        <?php else: ?>
+                            <?= $price > 0 ? '+' : '' ?><?= $escaper->escapeHtml($block->formatPrice($price)) ?>
+                        <?php endif; ?>
+                    </span>
+                <?php endif; ?>
+            </label>
+        </div>
+    <?php endforeach; ?>
+</div>
+
+<?php if ($isSizeOption): ?>
+<style>
+/* Special styling for SIZE radio buttons */
+.size-option-radio {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.size-option-radio .radio-option-item {
+    flex: 0 0 auto;
+}
+
+.size-option-radio .radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.size-option-radio .size-label {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #fff;
+    min-width: 80px;
+    text-align: center;
+}
+
+.size-option-radio .radio:checked + .size-label {
+    border-color: #1a73e8;
+    background-color: #1a73e8;
+    color: #fff;
+}
+
+.size-option-radio .size-label:hover {
+    border-color: #1a73e8;
+    background-color: #f0f7ff;
+}
+
+.size-option-radio .radio:checked + .size-label:hover {
+    background-color: #1557b0;
+}
+
+.size-option-radio .option-value-text {
+    display: block;
+    font-weight: 600;
+}
+
+.size-option-radio .option-price {
+    display: block;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.size-option-radio .radio:checked + .size-label .option-price {
+    color: rgba(255, 255, 255, 0.9);
+}
+</style>
+<?php else: ?>
+<style>
+/* Standard radio button styling */
+.radio-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.radio-option-item {
+    display: flex;
+    align-items: center;
+}
+
+.radio-option-item .radio {
+    margin-right: 0.5rem;
+}
+
+.radio-option-item .radio-label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.radio-option-item .option-price {
+    color: #666;
+    font-size: 0.875rem;
+}
+</style>
+<?php endif; ?>
