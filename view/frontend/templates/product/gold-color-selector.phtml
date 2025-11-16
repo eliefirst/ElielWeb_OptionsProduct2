@@ -9,12 +9,8 @@
  * @var \Magento\Catalog\Api\Data\ProductInterface $product
  */
 
-// Get product from registry
-$registry = $block->getData('product');
-$product = $registry instanceof \Magento\Framework\Registry
-    ? $registry->registry('current_product')
-    : $block->getData('product');
-
+// Get product from block (Magento\Catalog\Block\Product\View has getProduct() method)
+$product = $block->getProduct();
 $goldColorViewModel = $block->getData('gold_color_view_model');
 
 if (!$product || !$goldColorViewModel || !$goldColorViewModel->hasGoldVariants($product)) {

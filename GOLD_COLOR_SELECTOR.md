@@ -198,10 +198,11 @@ Vérifiez que l'attribut `gold_color` est bien renseigné avec les valeurs exact
 
 ### Les swatches ne sont pas cliquables
 
-Vérifiez que les URL des produits sont bien générées :
+Vérifiez que les attributs et le cache sont bien à jour :
 ```bash
-bin/magento indexer:reindex catalog_product_flat
-bin/magento indexer:reindex catalog_url
+bin/magento indexer:reindex catalog_product_attribute
+bin/magento indexer:reindex catalogsearch_fulltext
+bin/magento cache:flush
 ```
 
 ## Support
