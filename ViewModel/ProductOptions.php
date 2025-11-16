@@ -304,4 +304,135 @@ class ProductOptions implements ArgumentInterface
 
         return $this->serializer->serialize($data);
     }
+
+    /**
+     * Get color hex code based on color name
+     * Maps common thread/wire color names to hex codes
+     *
+     * @param string $colorName
+     * @return string|null
+     */
+    public function getColorHexCode(string $colorName): ?string
+    {
+        $colorMap = [
+            // Blacks & Grays
+            'black' => '#000000',
+            'licorice' => '#1B1212',
+            'anthracite' => '#293133',
+            'gray' => '#808080',
+            'grey' => '#808080',
+            'metal' => '#71797E',
+
+            // Whites & Neutrals
+            'white' => '#FFFFFF',
+            'cream' => '#FFFDD0',
+            'pearl' => '#EAE0C8',
+            'champagne' => '#F7E7CE',
+            'biscuit' => '#FFE4C4',
+            'wheat' => '#F5DEB3',
+
+            // Beiges & Taupes
+            'beige' => '#F5F5DC',
+            'taupe' => '#B38B6D',
+            'greige' => '#C9C0BB',
+
+            // Browns
+            'brown' => '#964B00',
+            'chocolate' => '#7B3F00',
+            'cocoa' => '#875F42',
+            'loam' => '#6B4423',
+            'rust' => '#B7410E',
+
+            // Pinks & Roses
+            'pink' => '#FFC0CB',
+            'rose' => '#FF007F',
+            'fushia' => '#FF00FF',
+            'orchid' => '#DA70D6',
+            'peony' => '#F4C2C2',
+            'raspberry' => '#E30B5C',
+            'candy' => '#FF69B4',
+            'salmon' => '#FA8072',
+
+            // Purples & Violets
+            'lilac' => '#C8A2C8',
+            'purple' => '#800080',
+            'violet' => '#8F00FF',
+            'lavender' => '#E6E6FA',
+            'mauve' => '#E0B0FF',
+
+            // Blues
+            'blue' => '#0000FF',
+            'ocean' => '#006994',
+            'caribbean' => '#00CED1',
+            'navy' => '#000080',
+            'baltic' => '#3F4F75',
+            'lagoon' => '#04536D',
+
+            // Greens
+            'green' => '#008000',
+            'olive' => '#808000',
+            'jade' => '#00A86B',
+            'forest' => '#228B22',
+            'leaf' => '#50C878',
+            'emerald' => '#50C878',
+            'lime' => '#00FF00',
+            'khaki' => '#C3B091',
+            'duck' => '#C3B091',
+
+            // Oranges & Reds
+            'orange' => '#FFA500',
+            'red' => '#FF0000',
+            'pumpkin' => '#FF7518',
+            'carrot' => '#ED9121',
+            'poppy' => '#E35335',
+            'cherry' => '#DE3163',
+            'pomegranate' => '#C34A36',
+
+            // Fluorescent
+            'fluo' => '#CCFF00',
+            'fluorescent' => '#CCFF00',
+            'flashy' => '#FF10F0',
+        ];
+
+        // Search for color in the name (case insensitive)
+        $colorNameLower = strtolower($colorName);
+
+        foreach ($colorMap as $color => $hex) {
+            if (stripos($colorNameLower, $color) !== false) {
+                return $hex;
+            }
+        }
+
+        // Default fallback color (light gray)
+        return '#CCCCCC';
+    }
+
+    /**
+     * Get wire color data with hex codes for all option values
+     *
+     * @param Option $option
+     * @return array
+     */
+    public function getWireColorsWithHex(Option $option): array
+    {
+        if (!$this->isWireOption($option)) {
+            return [];
+        }
+
+        $values = $option->getValues() ?? [];
+        $colorsData = [];
+
+        foreach ($values as $value) {
+            $colorName = $value->getTitle();
+            $colorsData[] = [
+                'id' => $value->getOptionTypeId(),
+                'name' => $colorName,
+                'hex' => $this->getColorHexCode($colorName),
+                'price' => (float)$value->getPrice(),
+                'price_type' => $value->getPriceType(),
+            ];
+        }
+
+        return $colorsData;
+    }
 }
