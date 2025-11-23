@@ -97,8 +97,19 @@ class SyncOptionsCommand extends Command
                 return Command::FAILURE;
             }
         } else {
-            // Use first product as source
-            $sourceProduct = reset($products);
+            // Find the product marked as options master
+            foreach ($products as $product) {
+                if ($product->getData('is_options_master')) {
+                    $sourceProduct = $product;
+                    break;
+                }
+            }
+
+            // Fallback to first product if no master found
+            if (!$sourceProduct) {
+                $sourceProduct = reset($products);
+                $output->writeln("<comment>No product marked as 'Options Master' found, using first product</comment>");
+            }
         }
 
         $output->writeln("<info>Source product: {$sourceProduct->getSku()}</info>");
