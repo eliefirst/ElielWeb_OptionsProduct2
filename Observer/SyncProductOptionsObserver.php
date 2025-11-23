@@ -44,6 +44,12 @@ class SyncProductOptionsObserver implements ObserverInterface
             return;
         }
 
+        // Only sync if this product is marked as options master
+        $isMaster = $product->getData('is_options_master');
+        if (!$isMaster) {
+            return;
+        }
+
         // Get options from this product
         $sourceOptions = $this->optionRepository->getProductOptions($product);
 
