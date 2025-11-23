@@ -1,7 +1,7 @@
 <?php
 /**
- * ElielWeb OptionsProduct - Color Swatch Option Template (Hyva)
- * Template for displaying wire/thread colors as visual swatches
+ * ElielWeb OptionsProduct - Modern Color Swatch Template
+ * Thread colors as visual ring swatches in a modal
  *
  * @var $block \Magento\Framework\View\Element\Template
  * @var \Magento\Catalog\Model\Product\Option $option
@@ -15,280 +15,345 @@ $optionsViewModel = $block->getData('options_view_model');
 $optionId = $option->getOptionId();
 $colorsData = $optionsViewModel->getWireColorsWithHex($option);
 
-// Group colors by family for better organization
-$colorFamilies = [
-    'Fluorescent' => ['Fluo', 'Fluorescent', 'Flashy'],
-    'Brown/Chocolate' => ['Chocolate', 'Brown', 'Cocoa', 'Loam', 'Rust'],
-    'Pink/Purple' => ['Pink', 'Rose', 'Fushia', 'Orchid', 'Peony', 'Raspberry', 'Candy', 'Lilac', 'Purple', 'Violet', 'Lavender', 'Mauve'],
-    'Blue' => ['Blue', 'Ocean', 'Caribbean', 'Navy', 'Baltic', 'Lagoon'],
-    'Black/Gray' => ['Black', 'Licorice', 'Anthracite', 'Gray', 'Grey', 'Metal'],
-    'Green' => ['Green', 'Olive', 'Jade', 'Forest', 'Leaf', 'Emerald', 'Lime', 'Khaki', 'Duck'],
-    'Beige/Neutral' => ['Beige', 'Taupe', 'Greige', 'Pearl', 'Cream', 'White', 'Champagne', 'Biscuit', 'Wheat'],
-    'Orange/Red' => ['Orange', 'Red', 'Salmon', 'Pumpkin', 'Carrot', 'Poppy', 'Cherry', 'Pomegranate'],
-    'Other' => []
-];
-
-$groupedColors = [];
-foreach ($colorsData as $color) {
-    $assigned = false;
-    foreach ($colorFamilies as $family => $keywords) {
-        foreach ($keywords as $keyword) {
-            if (stripos($color['name'], $keyword) !== false) {
-                $groupedColors[$family][] = $color;
-                $assigned = true;
-                break 2;
-            }
-        }
-    }
-    if (!$assigned) {
-        $groupedColors['Other'][] = $color;
-    }
-}
+// Limit preview colors to first 5
+$previewColors = array_slice($colorsData, 0, 5);
+$remainingCount = count($colorsData) - 5;
 ?>
 
-<div class="color-swatch-options wire-color-selector"
+<!-- Load Alpine.js if not already loaded -->
+<script>
+if (typeof Alpine === 'undefined') {
+    var alpineScript = document.createElement('script');
+    alpineScript.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js';
+    alpineScript.defer = true;
+    document.head.appendChild(alpineScript);
+}
+</script>
+
+<div class="thread-color-selector-modern"
      x-data="{
          selectedColor: null,
-         hoveredColor: null,
-         showAllColors: false
-     }"
-     role="radiogroup"
-     aria-labelledby="option-label-<?= $escaper->escapeHtmlAttr($optionId) ?>">
+         selectedColorName: '',
+         selectedColorHex: '',
+         isModalOpen: false,
+         selectColor(id, name, hex, price) {
+             this.selectedColor = id;
+             this.selectedColorName = name;
+             this.selectedColorHex = hex;
+             this.isModalOpen = false;
+             document.querySelector('input[name=\'options[<?= (int)$optionId ?>]\']').value = id;
+             this.$dispatch('option-selected', {
+                 optionId: <?= (int)$optionId ?>,
+                 valueId: id,
+                 price: price
+             });
+         }
+     }">
 
-    <!-- Hidden input for form submission -->
+    <!-- Hidden input -->
     <input type="hidden"
            name="options[<?= $escaper->escapeHtmlAttr($optionId) ?>]"
            x-model="selectedColor"
            <?= $option->getIsRequire() ? 'required' : '' ?>>
 
-    <!-- Color family groups -->
-    <?php foreach ($groupedColors as $family => $familyColors): ?>
-        <?php if (!empty($familyColors)): ?>
-            <div class="color-family-group"
-                 x-show="showAllColors || '<?= $escaper->escapeJs($family) ?>' === 'Pink/Purple' || '<?= $escaper->escapeJs($family) ?>' === 'Blue' || '<?= $escaper->escapeJs($family) ?>' === 'Black/Gray'">
-                <h4 class="family-title"><?= $escaper->escapeHtml(__($family)) ?></h4>
-
-                <div class="color-swatches-grid">
-                    <?php foreach ($familyColors as $color): ?>
-                        <?php
-                        $colorId = $color['id'];
-                        $colorName = $color['name'];
-                        $colorHex = $color['hex'];
-                        $price = $color['price'];
-                        $priceType = $color['price_type'];
-                        $inputId = 'color_' . $optionId . '_' . $colorId;
-
-                        // Determine if color is light (for border visibility)
-                        $rgb = sscanf($colorHex, "#%02x%02x%02x");
-                        $luminance = ($rgb[0] * 0.299 + $rgb[1] * 0.587 + $rgb[2] * 0.114) / 255;
-                        $isLight = $luminance > 0.8;
-                        ?>
-
-                        <div class="color-swatch-item"
-                             @click="selectedColor = '<?= $escaper->escapeJs($colorId) ?>';
-                                     selectOption(<?= (int)$optionId ?>, <?= (int)$colorId ?>, <?= (float)$price ?>)"
-                             @mouseenter="hoveredColor = '<?= $escaper->escapeJs($colorId) ?>'"
-                             @mouseleave="hoveredColor = null"
-                             :class="{ 'selected': selectedColor === '<?= $escaper->escapeJs($colorId) ?>' }">
-
-                            <div class="color-swatch <?= $isLight ? 'light-color' : '' ?>"
-                                 style="background-color: <?= $escaper->escapeHtmlAttr($colorHex) ?>;"
-                                 title="<?= $escaper->escapeHtmlAttr($colorName) ?>">
-
-                                <!-- Checkmark for selected color -->
-                                <svg class="check-icon"
-                                     x-show="selectedColor === '<?= $escaper->escapeJs($colorId) ?>'"
-                                     xmlns="http://www.w3.org/2000/svg"
-                                     viewBox="0 0 24 24"
-                                     fill="none"
-                                     stroke="currentColor"
-                                     stroke-width="3">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                            </div>
-
-                            <!-- Color name tooltip -->
-                            <div class="color-tooltip"
-                                 x-show="hoveredColor === '<?= $escaper->escapeJs($colorId) ?>' || selectedColor === '<?= $escaper->escapeJs($colorId) ?>'">
-                                <span class="color-name"><?= $escaper->escapeHtml($colorName) ?></span>
-                                <?php if ($price != 0): ?>
-                                    <span class="color-price">
-                                        <?php if ($priceType === 'percent'): ?>
-                                            (<?= $price > 0 ? '+' : '' ?><?= $escaper->escapeHtml($price) ?>%)
-                                        <?php else: ?>
-                                            (<?= $price > 0 ? '+' : '' ?><?= $escaper->escapeHtml($block->formatPrice($price)) ?>)
-                                        <?php endif; ?>
-                                    </span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+    <!-- Preview Row with mini rings - clickable -->
+    <div class="color-preview-row">
+        <?php foreach ($previewColors as $color): ?>
+            <div class="mini-ring-preview"
+                 style="--ring-color: <?= $escaper->escapeHtmlAttr($color['hex']) ?>;"
+                 title="<?= $escaper->escapeHtmlAttr($color['name']) ?>"
+                 @click="selectColor('<?= $escaper->escapeJs($color['id']) ?>', '<?= $escaper->escapeJs($color['name']) ?>', '<?= $escaper->escapeJs($color['hex']) ?>', <?= (float)$color['price'] ?>)"
+                 :class="{ 'active': selectedColor === '<?= $escaper->escapeJs($color['id']) ?>' }">
             </div>
-        <?php endif; ?>
-    <?php endforeach; ?>
+        <?php endforeach; ?>
 
-    <!-- Show more/less button -->
-    <button type="button"
-            class="show-all-colors-btn"
-            @click="showAllColors = !showAllColors"
-            x-text="showAllColors ? '<?= $escaper->escapeJs(__('Show Less Colors')) ?>' : '<?= $escaper->escapeJs(__('Show All Colors')) ?>'">
-    </button>
+        <?php if ($remainingCount > 0): ?>
+            <button type="button" class="more-colors-btn" @click="isModalOpen = true">
+                +<?= $remainingCount ?>
+            </button>
+        <?php endif; ?>
+    </div>
+
+    <!-- Selected display -->
+    <div class="selected-display" x-show="selectedColor" x-cloak>
+        <span class="selected-ring" :style="'--ring-color: ' + selectedColorHex"></span>
+        <span class="selected-name" x-text="selectedColorName"></span>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="color-modal-overlay"
+         x-show="isModalOpen"
+         x-transition.opacity
+         @click="isModalOpen = false"
+         style="display: none;">
+    </div>
+
+    <!-- Modal Content -->
+    <div class="color-modal-modern"
+         x-show="isModalOpen"
+         x-transition
+         @click.away="isModalOpen = false"
+         style="display: none;">
+
+        <div class="modal-header">
+            <h3><?= $escaper->escapeHtml(__('Choose your thread color')) ?></h3>
+            <button type="button" class="modal-close" @click="isModalOpen = false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="color-cards-grid">
+            <?php foreach ($colorsData as $color): ?>
+                <div class="color-card"
+                     @click="selectColor('<?= $escaper->escapeJs($color['id']) ?>', '<?= $escaper->escapeJs($color['name']) ?>', '<?= $escaper->escapeJs($color['hex']) ?>', <?= (float)$color['price'] ?>)"
+                     :class="{ 'selected': selectedColor === '<?= $escaper->escapeJs($color['id']) ?>' }">
+
+                    <div class="ring-swatch" style="--ring-color: <?= $escaper->escapeHtmlAttr($color['hex']) ?>;"></div>
+                    <span class="color-name"><?= $escaper->escapeHtml($color['name']) ?></span>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
 </div>
 
 <style>
-.wire-color-selector {
-    margin: 1rem 0;
-}
+[x-cloak] { display: none !important; }
 
-.color-family-group {
-    margin-bottom: 2rem;
-}
-
-.family-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.color-swatches-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
-    gap: 0.75rem;
-    max-width: 100%;
-}
-
-.color-swatch-item {
+.thread-color-selector-modern {
     position: relative;
-    cursor: pointer;
-    transition: transform 0.2s ease;
 }
 
-.color-swatch-item:hover {
-    transform: translateY(-2px);
-}
-
-.color-swatch {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    transition: all 0.2s ease;
+/* Preview Row */
+.color-preview-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    gap: 0.75rem;
+    padding: 1rem 0;
 }
 
-.color-swatch.light-color {
-    border: 2px solid #ddd;
-}
-
-.color-swatch-item:hover .color-swatch {
-    border-color: #1a73e8;
-    box-shadow: 0 4px 8px rgba(26, 115, 232, 0.3);
-}
-
-.color-swatch-item.selected .color-swatch {
-    border: 3px solid #1a73e8;
-    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
-    transform: scale(1.1);
-}
-
-.check-icon {
-    width: 20px;
-    height: 20px;
-    color: white;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
-}
-
-.color-swatch.light-color .check-icon {
-    color: #1a73e8;
-    filter: none;
-}
-
-.color-tooltip {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 0.5rem;
-    background-color: #333;
-    color: white;
-    padding: 0.5rem 0.75rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    z-index: 10;
-    pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.color-tooltip::before {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-bottom-color: #333;
-}
-
-.color-name {
-    display: block;
-    font-weight: 600;
-}
-
-.color-price {
-    display: block;
-    font-size: 0.7rem;
-    opacity: 0.9;
-    margin-top: 0.125rem;
-}
-
-.show-all-colors-btn {
-    margin-top: 1rem;
-    padding: 0.5rem 1.5rem;
-    background-color: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.mini-ring-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid var(--ring-color);
+    background: transparent;
     cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mini-ring-preview:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.mini-ring-preview.active {
+    box-shadow: 0 0 0 2px #333;
+    transform: scale(1.05);
+}
+
+.more-colors-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px dashed #ccc;
+    background: #f5f5f5;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.more-colors-btn:hover {
+    border-color: #333;
+    color: #333;
+    background: #fff;
+}
+
+/* Selected Display */
+.selected-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid #eee;
+}
+
+.selected-ring {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 3px solid var(--ring-color);
+    background: transparent;
+}
+
+.selected-name {
     font-size: 0.875rem;
     font-weight: 500;
     color: #333;
+}
+
+/* Modal Overlay */
+.color-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+/* Modal */
+.color-modal-modern {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow: hidden;
+    z-index: 1001;
+    border-radius: 12px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: #999;
+    border-radius: 50%;
     transition: all 0.2s ease;
 }
 
-.show-all-colors-btn:hover {
-    background-color: #1a73e8;
-    border-color: #1a73e8;
-    color: white;
+.modal-close:hover {
+    background: #f5f5f5;
+    color: #333;
 }
 
-/* Responsive adjustments */
+/* Color Cards Grid */
+.color-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem 2rem 2rem;
+    overflow-y: auto;
+}
+
+.color-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    background: #fafafa;
+}
+
+.color-card:hover {
+    background: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.color-card.selected {
+    border-color: #333;
+    background: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.ring-swatch {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 4px solid var(--ring-color);
+    background: transparent;
+    margin-bottom: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.color-card:hover .ring-swatch {
+    transform: scale(1.05);
+}
+
+.color-name {
+    font-size: 0.75rem;
+    color: #666;
+    text-align: center;
+    font-weight: 500;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.color-card.selected .color-name {
+    color: #333;
+    font-weight: 600;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-    .color-swatches-grid {
-        grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-        gap: 0.5rem;
+    .color-modal-modern {
+        width: 95%;
+        max-height: 90vh;
     }
 
-    .color-swatch {
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .color-cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        padding: 1rem 1.5rem 1.5rem;
+        gap: 0.75rem;
+    }
+
+    .color-card {
+        padding: 0.75rem;
+    }
+
+    .ring-swatch {
         width: 40px;
         height: 40px;
+        border-width: 3px;
     }
 }
 
 @media (max-width: 480px) {
-    .color-swatches-grid {
-        grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
+    .color-cards-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
 
-    .color-swatch {
-        width: 35px;
-        height: 35px;
+    .ring-swatch {
+        width: 36px;
+        height: 36px;
+    }
+
+    .color-name {
+        font-size: 0.65rem;
     }
 }
 </style>
