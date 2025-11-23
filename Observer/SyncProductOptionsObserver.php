@@ -103,6 +103,11 @@ class SyncProductOptionsObserver implements ObserverInterface
                 ->setImageSizeY($sourceOption->getImageSizeY())
                 ->setFileExtension($sourceOption->getFileExtension());
 
+            // Copy additional_data (contains is_wire flag for thread colors)
+            if ($sourceOption->getData('additional_data')) {
+                $newOption->setData('additional_data', $sourceOption->getData('additional_data'));
+            }
+
             // Copy option values for select-type options
             $sourceValues = $sourceOption->getValues();
             if ($sourceValues) {
