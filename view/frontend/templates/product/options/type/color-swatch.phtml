@@ -56,12 +56,14 @@ if (typeof Alpine === 'undefined') {
            x-model="selectedColor"
            <?= $option->getIsRequire() ? 'required' : '' ?>>
 
-    <!-- Preview Row with mini rings -->
+    <!-- Preview Row with mini rings - clickable -->
     <div class="color-preview-row">
         <?php foreach ($previewColors as $color): ?>
             <div class="mini-ring-preview"
                  style="--ring-color: <?= $escaper->escapeHtmlAttr($color['hex']) ?>;"
-                 title="<?= $escaper->escapeHtmlAttr($color['name']) ?>">
+                 title="<?= $escaper->escapeHtmlAttr($color['name']) ?>"
+                 @click="selectColor('<?= $escaper->escapeJs($color['id']) ?>', '<?= $escaper->escapeJs($color['name']) ?>', '<?= $escaper->escapeJs($color['hex']) ?>', <?= (float)$color['price'] ?>)"
+                 :class="{ 'active': selectedColor === '<?= $escaper->escapeJs($color['id']) ?>' }">
             </div>
         <?php endforeach; ?>
 
@@ -145,6 +147,11 @@ if (typeof Alpine === 'undefined') {
 .mini-ring-preview:hover {
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.mini-ring-preview.active {
+    box-shadow: 0 0 0 2px #333;
+    transform: scale(1.05);
 }
 
 .more-colors-btn {
