@@ -21,7 +21,7 @@
                 </argument>
             </arguments>
             <action method="setTemplate">
-                <argument name="template" xsi:type="string">ElielWeb_ProductConfigurator::product/options/wrapper.phtml</argument>
+                <argument name="template" xsi:type="string">ElielWeb_ProductConfigurator::product/options/wrapper-compact.phtml</argument>
             </action>
         </referenceBlock>
 

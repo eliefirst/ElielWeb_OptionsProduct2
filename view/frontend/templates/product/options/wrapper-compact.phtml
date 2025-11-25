@@ -1,0 +1,380 @@
+<?php
+/**
+ * ElielWeb ProductConfigurator - Compact Options Wrapper (RedLine Style)
+ *
+ * Collapsed/expandable options layout
+ *
+ * @var $block \Magento\Catalog\Block\Product\View\Options
+ * @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer
+ * @var \ElielWeb\ProductConfigurator\ViewModel\ProductOptions $optionsViewModel
+ */
+
+use Magento\Catalog\Model\Product\Option;
+
+$product = $block->getProduct();
+$optionsViewModel = $block->getData('product_options_view_model');
+
+// Check options directly instead of has_options flag
+$options = $product->getOptions() ?? [];
+if (empty($options)) {
+    return;
+}
+?>
+
+<div class="product-options-compact"
+     id="product-options-wrapper"
+     x-data="productOptionsCompact(<?= $escaper->escapeHtmlAttr($optionsViewModel->getAlpineData($product)) ?>)"
+     x-init="init()">
+
+    <div class="options-list">
+        <?php foreach ($options as $option): ?>
+            <?php
+            $optionId = $option->getOptionId();
+            $isWireOption = $optionsViewModel->isWireOption($option);
+            $isSizeOption = $optionsViewModel->isSizeOption($option);
+            ?>
+
+            <div class="option-row <?= $escaper->escapeHtmlAttr($optionsViewModel->getOptionCssClass($option)) ?>"
+                 data-option-id="<?= $escaper->escapeHtmlAttr($optionId) ?>"
+                 x-data="{ open: false }">
+
+                <!-- Option Header -->
+                <div class="option-header">
+                    <span class="option-label">
+                        <?= $escaper->escapeHtml(strtoupper($option->getTitle())) ?>
+                        <?php if ($option->getIsRequire()): ?>
+                            <span class="required">*</span>
+                        <?php endif; ?>
+                    </span>
+
+                    <div class="option-action">
+                        <!-- For wire/color options, show "CHOISIR" button -->
+                        <?php if ($isWireOption): ?>
+                            <button type="button"
+                                    class="choose-btn"
+                                    @click="open = !open">
+                                <span x-show="!selectedOptions[<?= (int)$optionId ?>]">
+                                    <?= $escaper->escapeHtml(__('CHOISIR')) ?>
+                                </span>
+                                <span x-show="selectedOptions[<?= (int)$optionId ?>]"
+                                      x-text="getSelectedLabel(<?= (int)$optionId ?>)"
+                                      class="selected-value"></span>
+                                <svg class="chevron" :class="{ 'rotate': open }" width="12" height="12" viewBox="0 0 12 12">
+                                    <path d="M2 4l4 4 4-4" stroke="currentColor" fill="none" stroke-width="2"/>
+                                </svg>
+                            </button>
+
+                        <!-- For size/other options, show "CHOISIR" button -->
+                        <?php elseif ($isSizeOption || $option->getType() === Option::OPTION_TYPE_RADIO): ?>
+                            <button type="button"
+                                    class="choose-btn"
+                                    @click="open = !open">
+                                <span x-show="!selectedOptions[<?= (int)$optionId ?>]">
+                                    <?= $escaper->escapeHtml(__('CHOISIR')) ?>
+                                </span>
+                                <span x-show="selectedOptions[<?= (int)$optionId ?>]"
+                                      x-text="getSelectedLabel(<?= (int)$optionId ?>)"
+                                      class="selected-value"></span>
+                                <svg class="chevron" :class="{ 'rotate': open }" width="12" height="12" viewBox="0 0 12 12">
+                                    <path d="M2 4l4 4 4-4" stroke="currentColor" fill="none" stroke-width="2"/>
+                                </svg>
+                            </button>
+
+                        <!-- For dropdown options -->
+                        <?php elseif ($option->getType() === Option::OPTION_TYPE_DROP_DOWN): ?>
+                            <button type="button"
+                                    class="choose-btn"
+                                    @click="open = !open">
+                                <span x-show="!selectedOptions[<?= (int)$optionId ?>]">
+                                    <?= $escaper->escapeHtml(__('CHOISIR')) ?>
+                                </span>
+                                <span x-show="selectedOptions[<?= (int)$optionId ?>]"
+                                      x-text="getSelectedLabel(<?= (int)$optionId ?>)"
+                                      class="selected-value"></span>
+                                <svg class="chevron" :class="{ 'rotate': open }" width="12" height="12" viewBox="0 0 12 12">
+                                    <path d="M2 4l4 4 4-4" stroke="currentColor" fill="none" stroke-width="2"/>
+                                </svg>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Expandable Content -->
+                <div class="option-content"
+                     x-show="open"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 transform -translate-y-2"
+                     x-transition:enter-end="opacity-100 transform translate-y-0"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     style="display: none;">
+
+                    <?php
+                    switch ($option->getType()) {
+                        case Option::OPTION_TYPE_RADIO:
+                            // Use compact radio template
+                            echo $block->getLayout()
+                                ->createBlock(\Magento\Framework\View\Element\Template::class)
+                                ->setTemplate('ElielWeb_ProductConfigurator::product/options/type/radio-compact.phtml')
+                                ->setData('option', $option)
+                                ->setData('product', $product)
+                                ->setData('options_view_model', $optionsViewModel)
+                                ->toHtml();
+                            break;
+
+                        case Option::OPTION_TYPE_DROP_DOWN:
+                            // Use compact select template
+                            if ($isWireOption) {
+                                // For wire colors, use color swatch grid
+                                echo $block->getLayout()
+                                    ->createBlock(\Magento\Framework\View\Element\Template::class)
+                                    ->setTemplate('ElielWeb_ProductConfigurator::product/options/type/color-grid.phtml')
+                                    ->setData('option', $option)
+                                    ->setData('product', $product)
+                                    ->setData('options_view_model', $optionsViewModel)
+                                    ->toHtml();
+                            } else {
+                                echo $block->getLayout()
+                                    ->createBlock(\Magento\Framework\View\Element\Template::class)
+                                    ->setTemplate('ElielWeb_ProductConfigurator::product/options/type/select-compact.phtml')
+                                    ->setData('option', $option)
+                                    ->setData('product', $product)
+                                    ->setData('options_view_model', $optionsViewModel)
+                                    ->toHtml();
+                            }
+                            break;
+
+                        default:
+                            // Fallback to default Magento rendering
+                            echo $block->getOptionHtml($option);
+                            break;
+                    }
+                    ?>
+                </div>
+
+                <!-- Error message -->
+                <?php if ($option->getIsRequire()): ?>
+                    <div class="mage-error" x-show="errors['option_<?= $escaper->escapeHtmlAttr($optionId) ?>']" style="display: none;">
+                        <?= $escaper->escapeHtml(__('This is a required field.')) ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <?php if ($product->getPriceInfo()->getPrice('custom_option_price')->getValue()): ?>
+        <div class="product-options-bottom">
+            <div class="options-total-price" x-show="totalPrice > 0">
+                <span class="label"><?= $escaper->escapeHtml(__('Options Total:')) ?></span>
+                <span class="price" x-text="formatPrice(totalPrice)"></span>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<script>
+function productOptionsCompact(initialData = {}) {
+    return {
+        options: initialData.options || [],
+        selectedOptions: {},
+        optionValues: {},
+        totalPrice: initialData.totalPrice || 0,
+        currencySymbol: initialData.currencySymbol || '€',
+        errors: {},
+
+        init() {
+            // Build option values map for quick label lookup
+            this.options.forEach(option => {
+                this.optionValues[option.id] = {};
+                if (option.values) {
+                    option.values.forEach(value => {
+                        this.optionValues[option.id][value.id] = value.title;
+                    });
+                }
+            });
+        },
+
+        selectOption(optionId, valueId, price = 0) {
+            this.selectedOptions[optionId] = {
+                valueId: valueId,
+                price: parseFloat(price) || 0
+            };
+
+            this.updateTotalPrice();
+            this.clearError(optionId);
+
+            // Update hidden input
+            const input = document.querySelector(`input[name="options[${optionId}]"]`);
+            if (input) {
+                input.value = valueId;
+            }
+
+            // Dispatch event for cart integration
+            this.$dispatch('option-selected', {
+                optionId: optionId,
+                valueId: valueId,
+                price: price
+            });
+        },
+
+        getSelectedLabel(optionId) {
+            const selected = this.selectedOptions[optionId];
+            if (selected && this.optionValues[optionId]) {
+                return this.optionValues[optionId][selected.valueId] || '';
+            }
+            return '';
+        },
+
+        updateTotalPrice() {
+            this.totalPrice = Object.values(this.selectedOptions)
+                .reduce((sum, opt) => sum + opt.price, 0);
+        },
+
+        formatPrice(price) {
+            return '+' + this.currencySymbol + price.toFixed(2);
+        },
+
+        validate() {
+            this.errors = {};
+            let isValid = true;
+
+            this.options.forEach(option => {
+                if (option.is_require && !this.selectedOptions[option.id]) {
+                    this.errors['option_' + option.id] = true;
+                    isValid = false;
+                }
+            });
+
+            return isValid;
+        },
+
+        clearError(optionId) {
+            delete this.errors['option_' + optionId];
+        },
+
+        getSelectedOptions() {
+            return this.selectedOptions;
+        }
+    }
+}
+</script>
+
+<style>
+.product-options-compact {
+    margin: 1.5rem 0;
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Option Row - RedLine style */
+.option-row {
+    border-bottom: 1px solid #e0e0e0;
+    padding: 1rem 0;
+}
+
+.option-row:last-child {
+    border-bottom: none;
+}
+
+/* Option Header */
+.option-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.option-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #333;
+}
+
+.option-label .required {
+    color: #e74c3c;
+    margin-left: 0.25rem;
+}
+
+/* Choose Button - RedLine style */
+.choose-btn {
+    background: none;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: color 0.2s ease;
+}
+
+.choose-btn:hover {
+    color: #333;
+}
+
+.choose-btn .selected-value {
+    color: #333;
+    font-weight: 600;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.choose-btn .chevron {
+    transition: transform 0.2s ease;
+}
+
+.choose-btn .chevron.rotate {
+    transform: rotate(180deg);
+}
+
+/* Option Content */
+.option-content {
+    padding-top: 1rem;
+}
+
+/* Options Total Price */
+.options-total-price {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.options-total-price .price {
+    color: #1a73e8;
+    font-size: 1.2rem;
+}
+
+/* Error styling */
+.mage-error {
+    color: #e74c3c;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .option-row {
+        padding: 0.75rem 0;
+    }
+
+    .choose-btn .selected-value {
+        max-width: 100px;
+    }
+}
+</style>
