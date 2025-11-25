@@ -8,7 +8,7 @@ Migration et remplacement du module Aitoc Options Management par une solution na
 
 ## 🎯 Objectifs
 
-- ✅ **Magento 2.4.8-p2** + **PHP 8.4.10 FPM** compatible
+- ✅ **Magento 2.4.8-p3** + **PHP 8.4.10 FPM** compatible
 - ✅ **Custom Options natives** Magento (aucune table custom)
 - ✅ **Hyva Theme Ready** (ViewModels + Alpine.js)
 - ✅ **Multi-store / Multi-langue**
@@ -165,7 +165,7 @@ Les options migrées sont stockées dans les tables natives :
 
 ### Environnement
 
-- **Magento**: 2.4.8-p2
+- **Magento**: 2.4.8-p3
 - **PHP**: 8.4.10 FPM
 - **Theme**: Hyva
 - **Multi-store**: Oui (FR, EN, CN, JP, ES)
