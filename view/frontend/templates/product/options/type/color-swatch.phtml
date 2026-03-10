@@ -23,6 +23,8 @@ $goldMapping = [
     'black-gold'  => 'or-noir',
 ];
 $goldFile = $goldMapping[$goldSlug] ?? 'or-blanc';
+$skuNormalized = strtolower(preg_replace('/[^a-zA-Z0-9]/', '_', trim($product->getSku())));
+$goldFile = $skuNormalized . '_' . $goldFile;
 
 $baseUrl     = $block->getBaseUrl();
 $wireMaskUrl = $baseUrl . 'pub/media/configurator/wire-masks/1_B-base_gris.png';
