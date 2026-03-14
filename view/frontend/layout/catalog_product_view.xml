@@ -13,18 +13,18 @@
                 <argument name="template" xsi:type="string">ElielWeb_ProductConfigurator::product/options/wrapper.phtml</argument>
             </action>
         </referenceBlock>
-        <!-- Gold Color Selector avant le product form -->
-        <referenceBlock name="product.info.form.content">
+        <!-- Gold Color Selector dans product.info.main avant product.info -->
+        <referenceContainer name="product.info.main">
             <block class="Magento\Catalog\Block\Product\View"
                    name="product.gold.color.selector"
                    template="ElielWeb_ProductConfigurator::product/gold-color-selector.phtml"
-                   before="-">
+                   before="product.info.options.wrapper">
                 <arguments>
                     <argument name="gold_color_view_model" xsi:type="object">
                         ElielWeb\ProductConfigurator\ViewModel\GoldColorSelector
                     </argument>
                 </arguments>
             </block>
-        </referenceBlock>
+        </referenceContainer>
     </body>
 </page>
