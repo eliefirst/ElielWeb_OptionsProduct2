@@ -1,19 +1,8 @@
 <?xml version="1.0"?>
-<!--
-/**
- * Product View Layout - Luma Compatible
- *
- * @category  ElielWeb
- * @package   ElielWeb_ProductConfigurator
- * @author    Elie <elie@redline.paris>
- * @copyright Copyright (c) 2025 RedLine
- * @license   Proprietary
- */
--->
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
-        <!-- Override product options block template -->
+        <!-- Override product options wrapper template -->
         <referenceBlock name="product.info.options">
             <arguments>
                 <argument name="product_options_view_model" xsi:type="object">
@@ -24,19 +13,18 @@
                 <argument name="template" xsi:type="string">ElielWeb_ProductConfigurator::product/options/wrapper.phtml</argument>
             </action>
         </referenceBlock>
-
-        <!-- Add Gold Color Selector before custom options -->
-        <referenceContainer name="product.info.main">
+        <!-- Gold Color Selector avant le product form -->
+        <referenceBlock name="product.info.form.content">
             <block class="Magento\Catalog\Block\Product\View"
                    name="product.gold.color.selector"
                    template="ElielWeb_ProductConfigurator::product/gold-color-selector.phtml"
-                   before="product.info.options">
+                   before="-">
                 <arguments>
                     <argument name="gold_color_view_model" xsi:type="object">
                         ElielWeb\ProductConfigurator\ViewModel\GoldColorSelector
                     </argument>
                 </arguments>
             </block>
-        </referenceContainer>
+        </referenceBlock>
     </body>
 </page>
