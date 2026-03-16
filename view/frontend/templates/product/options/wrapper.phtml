@@ -6,16 +6,27 @@
  * @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer
  * @var \ElielWeb\ProductConfigurator\ViewModel\ProductOptions $optionsViewModel
  */
-
 use Magento\Catalog\Model\Product\Option;
 
-$product = $block->getProduct();
+$product          = $block->getProduct();
 $optionsViewModel = $block->getData('product_options_view_model');
 
-// Check options directly instead of has_options flag
 $options = $product->getOptions() ?? [];
 if (empty($options)) {
     return;
+}
+
+// Visual Compositor — rendu canvas si produit éligible
+$compositorViewModel = \Magento\Framework\App\ObjectManager::getInstance()
+    ->get(\ElielWeb\VisualCompositor\ViewModel\ProductCompositor::class);
+
+if ($compositorViewModel->isEnabled($product)) {
+    $compositorBlock = $block->getLayout()
+        ->createBlock(\Magento\Framework\View\Element\Template::class)
+        ->setTemplate('ElielWeb_VisualCompositor::product/compositor.phtml')
+        ->setData('compositor_view_model', $compositorViewModel)
+        ->setData('product', $product);
+    echo $compositorBlock->toHtml();
 }
 ?>
 
@@ -35,12 +46,9 @@ if (empty($options)) {
 
                 <div class="control">
                     <?php
-                    // Check if this is a wire color option that should use color swatches
                     $isWireOption = $optionsViewModel->isWireOption($option);
-
                     switch ($option->getType()) {
                         case Option::OPTION_TYPE_RADIO:
-                            // Use color swatch template for wire options, regular radio for others
                             if ($isWireOption) {
                                 echo $block->getLayout()
                                     ->createBlock(\Magento\Framework\View\Element\Template::class)
@@ -61,7 +69,6 @@ if (empty($options)) {
                             break;
 
                         case Option::OPTION_TYPE_DROP_DOWN:
-                            // Use color swatch template for wire options, regular select for others
                             if ($isWireOption) {
                                 echo $block->getLayout()
                                     ->createBlock(\Magento\Framework\View\Element\Template::class)
@@ -82,7 +89,6 @@ if (empty($options)) {
                             break;
 
                         default:
-                            // Fallback to default Magento rendering
                             echo $block->getOptionHtml($option);
                             break;
                     }
@@ -90,22 +96,15 @@ if (empty($options)) {
                 </div>
 
                 <?php if ($option->getIsRequire()): ?>
-                    <div class="mage-error" x-show="errors['option_<?= $escaper->escapeHtmlAttr($option->getOptionId()) ?>']" style="display: none;">
+                    <div class="mage-error"
+                         x-show="errors['option_<?= $escaper->escapeHtmlAttr($option->getOptionId()) ?>']"
+                         style="display: none;">
                         <?= $escaper->escapeHtml(__('This is a required field.')) ?>
                     </div>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>
-
-    <?php if ($product->getPriceInfo()->getPrice('custom_option_price')->getValue()): ?>
-        <div class="product-options-bottom">
-            <div class="options-total-price" x-show="totalPrice > 0">
-                <span class="label"><?= $escaper->escapeHtml(__('Options Total:')) ?></span>
-                <span class="price" x-text="formatPrice(totalPrice)"></span>
-            </div>
-        </div>
-    <?php endif; ?>
 </div>
 
 <script>
@@ -118,10 +117,8 @@ function productOptions(initialData = {}) {
         errors: {},
 
         init() {
-            // Initialize default selections
             this.options.forEach(option => {
                 if (option.type === 'radio' || option.type === 'drop_down') {
-                    // Find default value if any
                     const defaultValue = option.values?.find(v => v.is_default);
                     if (defaultValue) {
                         this.selectOption(option.id, defaultValue.id, defaultValue.price);
@@ -131,20 +128,10 @@ function productOptions(initialData = {}) {
         },
 
         selectOption(optionId, valueId, price = 0) {
-            this.selectedOptions[optionId] = {
-                valueId: valueId,
-                price: parseFloat(price) || 0
-            };
-
+            this.selectedOptions[optionId] = { valueId, price: parseFloat(price) || 0 };
             this.updateTotalPrice();
             this.clearError(optionId);
-
-            // Dispatch event for cart integration
-            this.$dispatch('option-selected', {
-                optionId: optionId,
-                valueId: valueId,
-                price: price
-            });
+            this.$dispatch('option-selected', { optionId, valueId, price });
         },
 
         updateTotalPrice() {
@@ -159,54 +146,18 @@ function productOptions(initialData = {}) {
         validate() {
             this.errors = {};
             let isValid = true;
-
             this.options.forEach(option => {
                 if (option.is_require && !this.selectedOptions[option.id]) {
                     this.errors['option_' + option.id] = true;
                     isValid = false;
                 }
             });
-
             return isValid;
         },
 
         clearError(optionId) {
             delete this.errors['option_' + optionId];
-        },
-
-        getSelectedOptions() {
-            return this.selectedOptions;
         }
     }
 }
 </script>
-
-<style>
-.product-custom-option {
-    margin-bottom: 1.5rem;
-}
-
-.option-wire .control {
-    /* Special styling for wire/thread color options */
-}
-
-.option-size .control {
-    /* Special styling for size options */
-}
-
-.options-total-price {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1rem;
-    padding: 1rem;
-    background-color: #f5f5f5;
-    border-radius: 4px;
-    font-weight: 600;
-}
-
-.options-total-price .price {
-    color: #1a73e8;
-    font-size: 1.2rem;
-}
-</style>
