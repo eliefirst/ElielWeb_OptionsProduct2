@@ -38,7 +38,7 @@ $isSizeOption = $optionsViewModel->isSizeOption($option);
                    class="radio"
                    <?= $option->getIsRequire() ? 'required' : '' ?>
                    @change="selectOption(<?= (int)$optionId ?>, <?= (int)$valueId ?>, <?= (float)$price ?>)"
-                   x-model="selectedOptions[<?= (int)$optionId ?>]?.valueId">
+                   x-model="selectedOptions[<?= (int)$optionId ?>] && selectedOptions[<?= (int)$optionId ?>].valueId ? selectedOptions[<?= (int)$optionId ?>].valueId : ''">
 
             <label for="<?= $escaper->escapeHtmlAttr($inputId) ?>"
                    class="radio-label <?= $isSizeOption ? 'size-label' : '' ?>">

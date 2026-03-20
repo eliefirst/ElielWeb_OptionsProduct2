@@ -59,7 +59,7 @@ if ($isWireOption && count($values) > 20) {
             class="product-custom-option <?= $option->getIsRequire() ? 'required' : '' ?>"
             <?= $option->getIsRequire() ? 'required' : '' ?>
             @change="selectOption(<?= (int)$optionId ?>, $event.target.value, parseFloat($event.target.options[$event.target.selectedIndex].dataset.price || 0))"
-            x-model="selectedOptions[<?= (int)$optionId ?>]?.valueId">
+            x-model="selectedOptions[<?= (int)$optionId ?>] ? selectedOptions[<?= (int)$optionId ?>].valueId : null">
 
         <option value="">
             <?= $escaper->escapeHtml(__('-- Please Select --')) ?>
